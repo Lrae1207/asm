@@ -1,9 +1,9 @@
 #!/bin/bash
 echo "Compiling $1.asm"
 
-nasm -f elf "$1.asm"
+nasm -gdwarf -f elf64 "$1.asm"
 if [ "$?" -eq "0" ]; then
-    ld -m elf_i386 -s -o "$1" "$1.o"
+    ld -o "$1" "$1.o"
 else
     echo "Compilation failed"
     exit 1
