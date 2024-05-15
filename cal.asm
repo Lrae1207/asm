@@ -32,11 +32,17 @@ STDERR  equ 2
 %endmacro
 
 section .data
-    promptStr db "~$", 0
+    promptStr:      db "~$", 0
+
+    validTerms:     dw "add", "sub", "mult", "div"
 
 section .bss
     inputBuffer:    resb 100
     stringLen:      resb 4
+    operandSize     resb 1 ; in bytes
+    operand1:       resb 256
+    operand2:       resb 256
+
 
 section .text
     global _start
@@ -63,11 +69,15 @@ prompt_user:
 ; Get the length of a string pointed to by eax and return it in stringLen
 string_length:
     push rax
-    .loop:
-        inc eax
-        cmp byte [eax], 0
-        jne .loop
-        sub eax, [esp]
-        mov [stringLen], eax
-        pop rax
-        ret
+    push rcx
+    mov ecx, eax
+    dec eax
+    jmp .loop
+.loop: inc eax
+    cmp byte [eax], 0
+    jne .loop
+    sub eax, ecx
+    mov [stringLen], eax
+    pop rcx
+    pop rax
+    ret
