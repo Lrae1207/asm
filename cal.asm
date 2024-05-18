@@ -22,10 +22,17 @@ BOOL_FALSE  equ 0
 
 ; Macros
 
-; Char to int
-%macro ctoi 1
+; Char to num
+%macro cton 1
     sub %1, ASCII_0
 %endmacro
+
+; Int to num
+%macro ntoc 1
+    add %1, ASCII_0
+%endmacro
+
+
 
 ; Prints a string
 %macro print_string 2
@@ -46,14 +53,19 @@ BOOL_FALSE  equ 0
 %endmacro
 
 section .data
+    welcomeMessage: db "Welcome to big calculator.", 0xa, 0xd
+    welcomeSize     equ $-welcomeMessage
     promptStr:      db "~$", 0
 
     validTerms:     dw "add", "sub", "mult", "div"
 
 section .bss
-    inputBuffer:    resb 100
-    operandSize     resb 1 ; in bytes
-    stringSize      resb 1 
+    ; Input/output
+    inputBuffer:    resb 256
+    outString:      resb 256
+    outStringSize:  resb 1
+
+    operandSize:    resb 1 ; in bytes
     operand1:       resb 256
     operand2:       resb 256
 
@@ -61,15 +73,21 @@ section .bss
 section .text
     global _start
 _start:
+    print_string welcomeMessage, welcomeSize
+
+    ;call prompt_user
+    ;mov eax, inputBuffer
+    ;call string_length
+    ;ntoc edx
+    ;mov byte [outString], dl
+    ;print_string outString, [outStringSize]
+
+    ; asm equivalent of while(some condition)
+main_loop:
     call prompt_user
-
-    mov eax, inputBuffer
-    call string_length
-    ctoi edx
-
-    mov [stringSize], edx
-
-    print_string [stringSize], 2
+    test eax,eax
+    je main_loop
+    
     call exit
 
 ; Exit the program
@@ -81,7 +99,10 @@ exit:
 ; Prompt the user and write input to inputBuffer
 prompt_user:
     print_string promptStr, 2
-    read_string inputBuffer, 100
+    read_string inputBuffer, 256
+    ret
+
+parse_input:
     ret
 
 ; Get the length of a string pointed to by eax and return it in edx
