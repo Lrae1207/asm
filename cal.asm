@@ -1,3 +1,6 @@
+; Basic ABI for function calls
+; eax - input
+; edx - return
 BITS 64
 ; Constants
 SYS_EXIT    equ 1
@@ -7,11 +10,22 @@ SYS_WRITE   equ 4
 SYS_OPEN    equ 5
 SYS_CLOSE   equ 6
 
+ASCII_0     equ '0'
+ASCII_a     equ 'a'
+
 STDIN   equ 0
 STDOUT  equ 1
 STDERR  equ 2
 
+BOOL_TRUE   equ 1
+BOOL_FALSE  equ 0
+
 ; Macros
+
+; Char to int
+%macro ctoi 1
+    sub %1, ASCII_0
+%endmacro
 
 ; Prints a string
 %macro print_string 2
@@ -38,8 +52,8 @@ section .data
 
 section .bss
     inputBuffer:    resb 100
-    stringLen:      resb 4
     operandSize     resb 1 ; in bytes
+    stringSize      resb 1 
     operand1:       resb 256
     operand2:       resb 256
 
@@ -48,13 +62,17 @@ section .text
     global _start
 _start:
     call prompt_user
+
     mov eax, inputBuffer
     call string_length
-    print_string inputBuffer, stringLen
+    ctoi edx
+
+    mov [stringSize], edx
+
+    print_string [stringSize], 2
     call exit
 
-
-
+; Exit the program
 exit:
     mov eax, 1
     int 0x80
@@ -66,7 +84,7 @@ prompt_user:
     read_string inputBuffer, 100
     ret
 
-; Get the length of a string pointed to by eax and return it in stringLen
+; Get the length of a string pointed to by eax and return it in edx
 string_length:
     push rax
     push rcx
@@ -77,7 +95,8 @@ string_length:
     cmp byte [eax], 0
     jne .loop
     sub eax, ecx
-    mov [stringLen], eax
+    mov edx, eax
+    dec edx
     pop rcx
     pop rax
     ret

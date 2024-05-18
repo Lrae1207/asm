@@ -11,8 +11,8 @@ fi
 
 if [ "$?" -eq "0" ]; then
     echo "Compiled and linked successfully"
-    echo "Running $1"
-    "./$1"
+    echo "Debugging $1"
+    gdb "$1" -ex "set disassembly-flavor intel" -ex "break _start"
 else
     echo "Link failed"
     exit 1
