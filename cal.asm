@@ -52,28 +52,44 @@ BOOL_FALSE  equ 0
     int 0x80
 %endmacro
 
-section .data
-    welcomeMessage: db "Welcome to big calculator.", 0xa, 0xd
-    welcomeSize     equ $-welcomeMessage
-    promptStr:      db "~$", 0
+section .
+    ; Messages/prompts:
+    welcomeMessage: db "Welcome to a calculator.", 0xa, 0xd
+    welcomeSize:    equ $-welcomeMessage
 
-    validTerms:     dw "add", "sub", "mult", "div"
+    promptStr:      db "~$", 0
+    promptOperand:   db "\nEnter operand size(in bytes):", 0
+    promptOperandSize: equ $-promptOperand
+    promptNotation:     db "\nEnter notation (x/h/d):", 0
+    promptNotationSize: equ $-promptNotation
+
+    validTerms:     dw "add", "sub", "mul", "div"
 
 section .bss
+    ; Program info
+    
     ; Input/output
     inputBuffer:    resb 256
     outString:      resb 256
-    outStringSize:  resb 1
 
     operandSize:    resb 1 ; in bytes
-    operand1:       resb 256
-    operand2:       resb 256
+    p_operand1:       resb 1
+    p_operand2:       resb 1
+
+
+    
 
 
 section .text
     global _start
 _start:
     print_string welcomeMessage, welcomeSize
+    mov rcx, promptOperand
+    mov rdx, [promptOperandSize]
+    call prompt_string
+    mov rcx, promptNotation
+    mov rdx, [promptNotationSize]
+    call prompt_string
 
     ;call prompt_user
     ;mov eax, inputBuffer
@@ -81,13 +97,7 @@ _start:
     ;ntoc edx
     ;mov byte [outString], dl
     ;print_string outString, [outStringSize]
-
-    ; asm equivalent of while(some condition)
-main_loop:
     call prompt_user
-    test eax,eax
-    je main_loop
-    
     call exit
 
 ; Exit the program
@@ -96,13 +106,24 @@ exit:
     int 0x80
     ret
 
+; Parse the user's input
+parse_input:
+
+    ret
+
+; Print edx bytes of a string starting at ecx then prompt the user
+prompt_string:
+    mov eax, SYS_WRITE
+    mov ebx, STDOUT
+    int 0x80
+    
+    read_string inputBuffer, 256
+    ret
+
 ; Prompt the user and write input to inputBuffer
 prompt_user:
     print_string promptStr, 2
     read_string inputBuffer, 256
-    ret
-
-parse_input:
     ret
 
 ; Get the length of a string pointed to by eax and return it in edx
