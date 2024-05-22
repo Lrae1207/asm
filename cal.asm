@@ -58,10 +58,11 @@ section .
     welcomeSize:    equ $-welcomeMessage
 
     promptStr:      db "~$", 0
-    promptOperand:   db "\nEnter operand size(in bytes):", 0
+    promptOperand:   db "Enter operand size(in bytes):", 0
     promptOperandSize: equ $-promptOperand
-    promptNotation:     db "\nEnter notation (x/h/d):", 0
+    promptNotation:     db "Enter notation (x/h/d):", 0
     promptNotationSize: equ $-promptNotation
+
 
     validTerms:     dw "add", "sub", "mul", "div"
 
@@ -84,20 +85,33 @@ section .text
     global _start
 _start:
     print_string welcomeMessage, welcomeSize
-    mov rcx, promptOperand
-    mov rdx, [promptOperandSize]
+    jmp .l_operandPrompt
+.l_operandPrompt: mov rcx, promptOperand
+    mov rdx, promptOperandSize
     call prompt_string
-    mov rcx, promptNotation
-    mov rdx, [promptNotationSize]
+    jmp .l_notationPrompt
+.l_notationPrompt: mov rcx, promptNotation
+    mov rdx, promptNotationSize
     call prompt_string
-
+    ; Check to see if input is 'x', 'h', or 'd'
+    xor rdx, rdx
+    mov byte rdx, [inputBuffer]
+    sub dl, 'd'
+    je .l_promptComplete
+    sub dl, 0x4
+    je .l_promptComplete
+    sub dl, 0x10
+    je .l_promptComplete
+    jmp .l_notationPrompt
+.l_promptComplete: call exit
     ;call prompt_user
     ;mov eax, inputBuffer
     ;call string_length
     ;ntoc edx
     ;mov byte [outString], dl
     ;print_string outString, [outStringSize]
-    call prompt_user
+    
+    ;call prompt_user
     call exit
 
 ; Exit the program
@@ -132,10 +146,10 @@ string_length:
     push rcx
     mov ecx, eax
     dec eax
-    jmp .loop
-.loop: inc eax
+    ;jmp .l_loop
+.l_loop: inc eax
     cmp byte [eax], 0
-    jne .loop
+    jne .l_loop
     sub eax, ecx
     mov edx, eax
     dec edx
