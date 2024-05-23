@@ -89,14 +89,16 @@ _start:
 .l_operandPrompt: mov rcx, promptOperand
     mov rdx, promptOperandSize
     call prompt_string
+    ; check to see if the operand is a number
+    
     jmp .l_notationPrompt
 .l_notationPrompt: mov rcx, promptNotation
     mov rdx, promptNotationSize
     call prompt_string
     ; Check to see if input is 'x', 'h', or 'd'
     xor rdx, rdx
-    mov byte rdx, [inputBuffer]
-    sub dl, 'd'
+    mov byte dl, [inputBuffer]
+    sub dl, 0x64
     je .l_promptComplete
     sub dl, 0x4
     je .l_promptComplete
@@ -140,19 +142,87 @@ prompt_user:
     read_string inputBuffer, 256
     ret
 
-; Get the length of a string pointed to by eax and return it in edx
+; Get the length of a string pointed to by rax and return it in rSdx
 string_length:
-    push rax
-    push rcx
-    mov ecx, eax
-    dec eax
-    ;jmp .l_loop
-.l_loop: inc eax
-    cmp byte [eax], 0
-    jne .l_loop
-    sub eax, ecx
-    mov edx, eax
-    dec edx
+    push rax    ; preserve rax
+    push rcx    ; preserve rcx
+    xor rdx, rdx; clear rdx
+    
+    mov rcx, rax; rcx contains pointer to the original string
+    dec rax     ; fix offset
+    jmp string_length.l_loop
+
+.l_loop: inc rax
+    cmp byte [rax], 0
+    jne string_length.l_loop
+    sub rax, rcx; end - start = string length
+    mov rdx, rax
+    dec rdx     ; fix offset
     pop rcx
     pop rax
+    ret
+
+; return the value of the string pointed to by eax from ascii to number
+hex_string_to_number:
+    call string_length  ; store input length in edx
+    mov rbx, rdx        ; transfer input length to ebx
+    xor rdx, rdx
+    mov rax, inputBuffer; move &inputBuffer to rax
+    add rax, rbx        ; &inputBuffer + inputBuffer.size()
+    xor rdi, rdi        ; rdi is the amount of times the loop has run 
+    xor rsi, rsi        ; rsi assists with multiplying by ten
+    xor rcx, rcx        ; rcs stores the sum
+    jmp hex_string_to_number.l_loop
+
+    ; Working backwards from &inputBuffer + inputBuffer.size() - 1
+.l_loop: dec rax
+    inc rdi
+    push rdi
+    mov byte sil, [rax]
+    cton sil
+    jmp hex_string_to_number.l_loop2
+
+.l_loop2: mov r8, 0
+    dec rdi
+    jne hex_string_to_number.l_loop2
+    pop rdi
+    test rax, rdx
+    jne hex_string_to_number.l_loop
+    
+    ret
+
+; return the value of the string pointed to by eax from ascii to number
+dec_string_to_number:
+    call string_length  ; store input length in edx
+    mov rbx, rdx        ; transfer input length to ebx
+    xor rdx, rdx
+    mov rax, inputBuffer; move &inputBuffer to rax
+    add rax, rbx        ; &inputBuffer + inputBuffer.size()
+    xor rdi, rdi        ; rdi is the amount of times the loop has run 
+    xor rsi, rsi        ; rsi assists with multiplying by ten
+    xor rcx, rcx        ; rcs stores the sum
+    jmp hex_string_to_number.l_loop
+
+    ; Working backwards from &inputBuffer + inputBuffer.size() - 1
+.l_loop: dec rax
+    inc rdi
+    push rdi
+    mov byte sil, [rax]
+    cton sil
+    test rdi, rdi 
+    je hex_string_to_number.l_loop2
+    jmp hex_string_to_number.l_loop
+
+.l_loop2: shl rsi, 1 ; rsi = rsi * 10 ^ rdi
+    mov rbx, rsi
+    shl rsi, 1
+    shl rsi, 1
+    add rsi, rbx
+
+    dec rdi
+    jne hex_string_to_number.l_loop2
+    pop rdi
+    test rax, rdx
+    jne hex_string_to_number.l_loop
+    
     ret
